@@ -58,5 +58,13 @@ async def users_search(p: Pagination = Depends()):
     return users
 
 
+@router.delete(
+    "/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_token)]
+)
+async def users_delete(client_id: UUID):
+    user = await ClientModel.get_or_404(client_id)
+    await user.delete()
+
+
 def include_router(app):
     app.include_router(router)

@@ -70,3 +70,19 @@ async def test_get(client, client_data):
     assert data["id"]
     assert data["username"] == client_data["username"]
     assert data["email"] == client_data["email"]
+
+
+@pytest.mark.asyncio
+async def test_delete(client, client_data):
+    client_model = await ClientFactory.create()
+
+    response = client.delete(f"/clients/{client_model.id}")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_delete_not_found(client):
+    client_id = str(uuid.uuid4())
+    response = client.delete(f"/clients/{client_id}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
