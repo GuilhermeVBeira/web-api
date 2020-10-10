@@ -1,10 +1,12 @@
 import typing
-from fastapi import APIRouter, Depends, status, HTTPException
-from web_app.pagination import Pagination
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from web_app.apps.auth.authentication import validate_token
-from web_app.apps.clients.schemas import Client
 from web_app.apps.clients.models import Client as ClientModel
-from web_app.main import db
+from web_app.apps.clients.schemas import Client
+from web_app.pagination import Pagination
 
 router = APIRouter()
 
@@ -22,12 +24,23 @@ async def client_create(client: Client):
         raise HTTPException(
             status_code=400,
             detail="The user with this username already exists in the system.",
-        ) 
+        )
     user = await ClientModel.create(
         username=client.username,
         email=client.email,
     )
     return user
+
+
+@router.get(
+    "/clients/{client_id}",
+    description="Endpoint to fetch client",
+    response_model=Client,
+    dependencies=[Depends(validate_token)],
+)
+async def client_get(client_id: UUID):
+    client = await ClientModel.get_or_404(client_id)
+    return client
 
 
 @router.get(

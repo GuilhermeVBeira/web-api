@@ -1,7 +1,10 @@
-from fastapi import status
+import uuid
+
 import pytest
-from web_app.apps.clients.models import Client as ClientModel
+from fastapi import status
+
 from .factories import ClientFactory
+from web_app.apps.clients.models import Client as ClientModel
 
 
 def test_create(client, client_data):
@@ -21,7 +24,7 @@ def test_create_exist_email(client, client_data):
     response = client.post("/clients/", json=client_data)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == {'detail': 'The user with this username already exists in the system.'}
+    assert response.json() == {"detail": "The user with this username already exists in the system."}
 
 
 @pytest.mark.asyncio
@@ -46,3 +49,24 @@ def test_search_without_results(client):
     data = response.json()
     assert len(data) == 0
 
+
+def test_get_not_found(client):
+    client_id = str(uuid.uuid4())
+    response = client.get(f"/clients/{client_id}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_get(client, client_data):
+    client_model = await ClientFactory.create()
+
+    response = client.get(f"/clients/{client_model.id}")
+
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+
+    assert data["id"]
+    assert data["username"] == client_data["username"]
+    assert data["email"] == client_data["email"]
