@@ -1,8 +1,8 @@
 import pytest
 from fastapi import status
 
-from web_app.apps.users.schemas import pwd_context
 from tests.apps.users.factories import UserFactory
+from web_app.apps.users.schemas import pwd_context
 
 
 @pytest.mark.asyncio
