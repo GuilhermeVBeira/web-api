@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 class Client(BaseModel):
     id: UUID = ""
     email: EmailStr
-    username: str = Field(..., min_length=8, max_length=64, description="The name that represents the client")
+    username: str = Field(..., min_length=6, max_length=64, description="The name that represents the client")
 
     class Config:
         orm_mode = True

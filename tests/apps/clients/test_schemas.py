@@ -11,6 +11,11 @@ def test_create_client_missing_required_atribute(client_data):
         Client(**client_data)
 
 
+def test_client_str(client_data):
+    client = Client(**client_data)
+    assert str(client) == f"{client.id}, {client.username}, {client.email}"
+
+
 def test_create_client_with_invalid_email(client_data):
     client_data["email"] = "email"
 
