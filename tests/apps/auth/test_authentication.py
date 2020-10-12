@@ -1,7 +1,6 @@
 from collections import namedtuple
 from unittest.mock import patch
 
-import nest_asyncio
 import pytest
 from fastapi import HTTPException
 from jose import jwt
@@ -10,8 +9,6 @@ from tests.apps.users.factories import UserFactory
 from web_app.apps.auth.authentication import Token, authenticate_user, validate_token
 from web_app.apps.users.schemas import pwd_context
 from web_app.config import settings
-
-nest_asyncio.apply()
 
 
 def test_validate_token():

@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 
 import pytest
 from fastapi import status
@@ -58,7 +59,9 @@ def test_get_not_found(client):
 
 
 @pytest.mark.asyncio
-async def test_get(client, client_data):
+@mock.patch("web_app.apps.clients.routers.get_products", new_callable=mock.AsyncMock)
+async def test_get(mock_get_clients, product_data, client, client_data):
+    mock_get_clients.return_value = [product_data]
     client_model = await ClientFactory.create()
 
     response = client.get(f"/clients/{client_model.id}")
@@ -70,6 +73,11 @@ async def test_get(client, client_data):
     assert data["id"]
     assert data["username"] == client_data["username"]
     assert data["email"] == client_data["email"]
+
+    assert len(data["favorite_products"]) == 1
+
+    response_product = data["favorite_products"][0]
+    assert response_product['id'] == product_data["id"]
 
 
 @pytest.mark.asyncio
