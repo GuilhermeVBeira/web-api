@@ -34,6 +34,7 @@ passlib = {extras = ["bcrypt"], version = "^1.7.2"}
 python-multipart = "^0.0.5"
 psycopg2 = "^2.8.6"
 aiohttp = "^3.6.3"
+flake8 = "^3.8.4"
 
 [tool.poetry.dev-dependencies]
 black = { version = "^19", allow-prereleases = true }

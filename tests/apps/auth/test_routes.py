@@ -16,7 +16,7 @@ from web_app.apps.users.schemas import pwd_context
 async def test_token_invalid_data(data_payload, client):
     password_hash = pwd_context.hash("abc123")
     await UserFactory().create(username="username", password=password_hash)
-    response = client.post("/token", data=data_payload)
+    response = client.post("/auth/login", data=data_payload)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Incorrect username or password"}
@@ -26,7 +26,7 @@ async def test_token_invalid_data(data_payload, client):
 async def test_token_success_creation(client):
     password_hash = pwd_context.hash("abc123")
     await UserFactory().create(username="name", password=password_hash)
-    response = client.post("/token", data={"username": "name", "password": "abc123"})
+    response = client.post("/auth/login", data={"username": "name", "password": "abc123"})
 
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response.json().keys()
