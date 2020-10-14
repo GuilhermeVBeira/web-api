@@ -25,7 +25,7 @@ def test_create_exist_email(client, client_data):
     response = client.post("/clients/", json=client_data)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == {"detail": "The user with this username already exists in the system."}
+    assert response.json() == {"detail": "The user with this email already exists in the system."}
 
 
 @pytest.mark.asyncio

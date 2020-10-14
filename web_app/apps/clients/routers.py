@@ -26,7 +26,7 @@ async def client_create(client: ClientProducts):
     if email_exists:
         raise HTTPException(
             status_code=400,
-            detail="The user with this username already exists in the system.",
+            detail="The user with this email already exists in the system.",
         )
     async with db.transaction():
         user = await ClientModel.create(
