@@ -1,3 +1,4 @@
+import asyncio
 import typing
 from uuid import UUID
 
@@ -6,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from web_app.apps.auth.authentication import validate_token
 from web_app.apps.clients.models import Client as ClientModel
 from web_app.apps.clients.models import FavoriteProduct
-from web_app.apps.clients.schemas import Client, ClientProducts
-from web_app.apps.clients.service import get_products
+from web_app.apps.clients.schemas import ClientProductsRequest, ClientProductsResponse
+from web_app.apps.clients.service import load_product, load_products, validate_product
 from web_app.main import db
 from web_app.pagination import Pagination
 
@@ -18,9 +19,9 @@ router = APIRouter()
     "/clients/",
     dependencies=[Depends(validate_token)],
     status_code=status.HTTP_201_CREATED,
-    response_model=ClientProducts,
+    response_model=ClientProductsResponse,
 )
-async def client_create(client: ClientProducts):
+async def client_create(client: ClientProductsRequest):
     query = ClientModel.query.where(ClientModel.email == client.email)
     email_exists = await query.gino.first()
     if email_exists:
@@ -28,44 +29,56 @@ async def client_create(client: ClientProducts):
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
+    # validate from external service
+    to_validate = [validate_product(product.id) for product in client.favorite_products]
+    valid_products = await asyncio.gather(*to_validate)
     async with db.transaction():
-        user = await ClientModel.create(
+        client_created = await ClientModel.create(
             username=client.username,
             email=client.email,
         )
-        for product in client.favorite_products:
-            await FavoriteProduct.create(external_id=product.id, client_id=user.id)
-    user.favorite_products = client.favorite_products
-    return user
+        favorite_products = [
+            dict(external_id=p.id, client_id=client_created.id) for p in client.favorite_products
+        ]
+        await FavoriteProduct.insert().gino.all(favorite_products)
+    client_created.favorite_products = valid_products
+    return client_created
 
 
 @router.get(
     "/clients/{client_id}",
     description="Endpoint to fetch client",
     dependencies=[Depends(validate_token)],
-    response_model=ClientProducts,
+    response_model=ClientProductsResponse,
 )
 async def client_get(client_id: UUID):
-    client = await ClientModel.get_or_404(client_id)
-    products = await FavoriteProduct.query.where(FavoriteProduct.client_id == client.id).gino.all()
-
-    client.favorite_products = await get_products(products)
+    query = FavoriteProduct.outerjoin(ClientModel).select()
+    loader = ClientModel.distinct(ClientModel.id).load(add_product=FavoriteProduct)
+    client = await query.where(ClientModel.id == client_id).gino.load(loader).all()
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Not found client",
+        )
+    client = await load_product(client[0])
     return client
 
 
 @router.get(
     "/clients/",
     description="Endpoint to search clients",
-    response_model=typing.List[Client],
+    response_model=typing.List[ClientProductsResponse],
     dependencies=[Depends(validate_token)],
 )
-async def users_search(p: Pagination = Depends()):
+async def clients_search(p: Pagination = Depends()):
+    query = FavoriteProduct.outerjoin(ClientModel).select()
+    loader = ClientModel.distinct(ClientModel.id).load(add_product=FavoriteProduct)
     if p.q is None:
-        query = ClientModel.query.limit(p.limit).offset(p.offset)
+        query = query.limit(p.limit).offset(p.offset)
     else:
-        query = ClientModel.query.where(ClientModel.username == p.q).limit(p.limit).offset(p.offset)
-    users = await query.gino.all()
-    return users
+        query = query.where(ClientModel.username == p.q).limit(p.limit).offset(p.offset)
+    clients = await query.gino.load(loader).all()
+    return await load_products(clients)
 
 
 @router.delete(

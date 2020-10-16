@@ -22,3 +22,15 @@ class Client(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(64), index=True, nullable=False)
     favorite_products = relationship(FavoriteProduct, backref="clients")
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self._products = set()
+
+    @property
+    def products(self):
+        return self._products
+
+    @products.setter
+    def add_product(self, child):
+        self._products.add(child)

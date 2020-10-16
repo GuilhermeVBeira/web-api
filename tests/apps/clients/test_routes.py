@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from fastapi import status
 
-from .factories import ClientFactory
+from .factories import ClientFactory, FavoriteProductFactory
 from web_app.apps.clients.models import Client as ClientModel
 
 
@@ -29,11 +29,16 @@ def test_create_exist_email(client, client_data):
 
 
 @pytest.mark.asyncio
-async def test_search_with_pagination_limit_offset(client, client_data):
-    await ClientFactory.create(email="random@email.com")
-    await ClientFactory.create(**client_data)
+@mock.patch("web_app.apps.clients.service.get_product", new_callable=mock.AsyncMock)
+async def test_search_with_pagination_limit_offset(mock_get_product, product_data, client, client_data):
+    mock_get_product.return_value = product_data
 
-    user_name = client_data["username"]
+    first_client = await ClientFactory.create()
+    second_client = await ClientFactory.create(email="second@email.com")
+    await FavoriteProductFactory.create(client_id=first_client.id)
+    await FavoriteProductFactory.create(client_id=second_client.id)
+
+    user_name = first_client.username
     response = client.get(f"/clients/?q={user_name}&limit=1&offset=0")
     assert response.status_code == status.HTTP_200_OK
 
@@ -59,12 +64,14 @@ def test_get_not_found(client):
 
 
 @pytest.mark.asyncio
-@mock.patch("web_app.apps.clients.routers.get_products", new_callable=mock.AsyncMock)
-async def test_get(mock_get_clients, product_data, client, client_data):
-    mock_get_clients.return_value = [product_data]
-    client_model = await ClientFactory.create()
+@mock.patch("web_app.apps.clients.service.get_product", new_callable=mock.AsyncMock)
+async def test_get(mock_get_product, product_data, client, client_data):
+    mock_get_product.return_value = product_data
 
-    response = client.get(f"/clients/{client_model.id}")
+    client_created = await ClientFactory.create()
+    await FavoriteProductFactory.create(client_id=client_created.id)
+
+    response = client.get(f"/clients/{client_created.id}")
 
     assert response.status_code == status.HTTP_200_OK
 
@@ -77,7 +84,8 @@ async def test_get(mock_get_clients, product_data, client, client_data):
     assert len(data["favorite_products"]) == 1
 
     response_product = data["favorite_products"][0]
-    assert response_product['id'] == product_data["id"]
+    assert response_product["id"] == product_data["id"]
+    assert mock_get_product.called is True
 
 
 @pytest.mark.asyncio
