@@ -27,7 +27,7 @@ async def client_create(client: ClientProductsRequest):
     if email_exists:
         raise HTTPException(
             status_code=400,
-            detail="The user with this email already exists in the system.",
+            detail="The client with this email already exists in the system.",
         )
     # validate from external service
     to_validate = [validate_product(product.id) for product in client.favorite_products]
@@ -84,9 +84,30 @@ async def clients_search(p: Pagination = Depends()):
 @router.delete(
     "/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_token)]
 )
-async def users_delete(client_id: UUID):
-    user = await ClientModel.get_or_404(client_id)
-    await user.delete()
+async def clients_delete(client_id: UUID):
+    client = await ClientModel.get_or_404(client_id)
+    await client.delete()
+
+
+@router.put(
+    "/clients/{client_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(validate_token)],
+    response_model=ClientProductsResponse,
+)
+async def clients_update(client_id: UUID, client: ClientProductsRequest):
+    async with db.transaction():
+        client_ = await ClientModel.get_or_404(client_id)
+        to_validate = [validate_product(product.id) for product in client.favorite_products]
+        valid_products = await asyncio.gather(*to_validate)
+
+        await client_.update(username=client.username, email=client.email).apply()
+        await FavoriteProduct.delete.where(FavoriteProduct.client_id == client_.id).gino.status()
+        favorite_products = [dict(external_id=p.id, client_id=client_.id) for p in client.favorite_products]
+        await FavoriteProduct.insert().gino.all(favorite_products)
+        client.id = client_.id
+        client.favorite_products = valid_products
+        return client
 
 
 def include_router(app):

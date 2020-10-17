@@ -25,7 +25,45 @@ def test_create_exist_email(client, client_data):
     response = client.post("/clients/", json=client_data)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == {"detail": "The user with this email already exists in the system."}
+    assert response.json() == {"detail": "The client with this email already exists in the system."}
+
+
+@pytest.mark.asyncio
+@mock.patch("web_app.apps.clients.service.get_product", new_callable=mock.AsyncMock)
+async def test_get_client(mock_get_product, product_data, client, client_data):
+    mock_get_product.return_value = product_data
+    client_created = await ClientFactory.create()
+    await FavoriteProductFactory.create(client_id=client_created.id)
+
+    response = client.get(f"/clients/{client_created.id}")
+    assert response.status_code == status.HTTP_200_OK
+
+    client_response = response.json()
+    assert client_created.username == client_response["username"]
+    assert client_created.email == client_response["email"]
+    assert len(client_response["favorite_products"]) == 1
+
+    product = client_response["favorite_products"][0]
+    assert product["id"] == product_data["id"]
+
+
+@pytest.mark.asyncio
+@mock.patch("web_app.apps.clients.service.validate_product", new_callable=mock.AsyncMock)
+async def test_update_client(mock_validate_product, product_data, client, client_data):
+    mock_validate_product.return_value = product_data
+    client_created = await ClientFactory.create()
+    await FavoriteProductFactory.create(client_id=client_created.id)
+    payload = {"username": "vegeta", "email": "vegeta@dbz.com"}
+
+    response = client.put(f"/clients/{client_created.id}", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    client_response = response.json()
+
+    refresh_client = await ClientModel.query.where(ClientModel.id == client_created.id).gino.first()
+
+    assert refresh_client.id == client_created.id
+    assert refresh_client.username == client_response["username"]
+    assert refresh_client.username != client_created.username
 
 
 @pytest.mark.asyncio
