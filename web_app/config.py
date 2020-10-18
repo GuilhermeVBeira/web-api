@@ -8,6 +8,7 @@ class Settings:
     SECRET_KEY = config("SECRET_KEY")
     TOKEN_URL = config("TOKEN_URL", default="token")
     ALGORITHM = config("ALGORITHM", default="HS256")
+    PRODUCTS_API = config("PRODUCTS_API")
     ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", default="30", cast=config.eval)
 
 
