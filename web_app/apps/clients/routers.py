@@ -85,8 +85,10 @@ async def clients_search(p: Pagination = Depends()):
     "/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_token)]
 )
 async def clients_delete(client_id: UUID):
-    client = await ClientModel.get_or_404(client_id)
-    await client.delete()
+    async with db.transaction():
+        await FavoriteProduct.delete.where(FavoriteProduct.client_id == client_id).gino.status()
+        client = await ClientModel.get_or_404(client_id)
+        await client.delete()
 
 
 @router.put(

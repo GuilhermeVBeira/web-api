@@ -2,7 +2,7 @@ import asyncio
 
 import click
 
-from web_app.main import db
+from web_app.main import db  # isort:skip
 from web_app.apps.users.models import User
 from web_app.apps.users.schemas import pwd_context
 from web_app.config import settings

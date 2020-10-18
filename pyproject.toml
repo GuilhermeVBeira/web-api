@@ -18,6 +18,7 @@ force_grid_wrap = 0
 use_parentheses = true
 known_localfolder = "web_app,apps,tests"
 skip_glob = "migrations/*"
+skip="web_app.utils"
 sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
 default_section = "THIRDPARTY"
 
