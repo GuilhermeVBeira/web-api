@@ -4,6 +4,9 @@ test:
 lint:
 	poetry run pre-commit run -a -v
 
+createuser:
+	python -m web_app.utils createuser
+
 install:
 	poetry install
 
