@@ -18,19 +18,17 @@ async def create_user(username, email, password):
     await User.create(username=username, email=email, is_active=True, password=password)
 
 
-@click.option('--password', prompt=True, hide_input=True,
-              confirmation_prompt=True)
-@click.option('--email', prompt=True)
-@click.option('--username', prompt=True)
+@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
+@click.option("--email", prompt=True)
+@click.option("--username", prompt=True)
 @click.command()
 def createuser(username, email, password):
     password = pwd_context.hash(password)
     asyncio.run(create_user(username, email, password))
-    click.echo(f'User {username} created')
+    click.echo(f"User {username} created")
 
 
 cli.add_command(createuser)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
-
