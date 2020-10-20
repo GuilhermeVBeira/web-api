@@ -152,3 +152,12 @@ content-type: application/json
 date: Sun, 3 Oct 1991 02:28:18 GMT
 server: uvicorn
 ```
+
+### Docs
+Fast api generate automatic documentation
+http://localhost:8000/docs
+![alt text](https://fastapi.tiangolo.com/img/index/index-01-swagger-ui-simple.png)
+
+
+
+
